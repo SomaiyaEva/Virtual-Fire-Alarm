@@ -1,0 +1,110 @@
+.MODEL SMALL
+.STACK 100H
+
+.DATA
+    prompt_heat     DB 'Enter heat sensor value: $'
+    newline db 0Dh, 0Ah, '$'
+    prompt_smoke    DB 'Enter smoke sensor value: $'
+    msg_normal      DB 'System Normal!', 0AH, 0DH, '$'
+    msg_fire        DB 'Fire Detected!!!', 0AH, 0DH, '$'
+    msg_wrong       DB 'Invalid input!', 0AH, 0DH, '$'
+.CODE
+MAIN PROC
+    MOV AX, @DATA       ; Initialize DS
+    MOV DS, AX
+
+    ; Prompt for heat sensor input
+    MOV AH, 09H
+    LEA DX, prompt_heat
+    INT 21H
+
+    ; Read heat sensor input
+    MOV AH, 01H
+    INT 21H
+    SUB AL, '0'         ; Convert ASCII to binary
+    MOV BL, AL          ; Store heat sensor value in BL
+    
+    ; New line
+    lea dx, newline
+    mov ah, 09h
+    int 21h
+    
+    ; Validate heat sensor input (must be binary)
+    CMP BL, 0
+    JE check_smoke
+    CMP BL, 1
+    JE check_smoke
+    MOV AH, 09H         ; Display "Wrong Inputs" message
+    LEA DX, msg_wrong
+    INT 21H
+    JMP END_PROGRAM
+
+check_smoke:
+    ; Prompt for smoke sensor input
+    MOV AH, 09H
+    LEA DX, prompt_smoke
+    INT 21H
+
+    ; Read smoke sensor input
+    MOV AH, 01H
+    INT 21H
+    SUB AL, '0'         ; Convert ASCII to binary
+    MOV BH, AL          ; Store smoke sensor value in BH
+    
+    ; New line
+    lea dx, newline
+    mov ah, 09h
+    int 21h
+    
+    ; Validate smoke sensor input (must be binary)
+    CMP BH, 0
+    JE perform_or
+    CMP BH, 1
+    JE perform_or
+    MOV AH, 09H         ; Display "Wrong Inputs" message
+    LEA DX, msg_wrong
+    INT 21H
+    JMP END_PROGRAM
+
+perform_or:
+    ; Perform logical OR operation (BL = heat sensor, BH = smoke sensor)
+    OR BL, BH
+    CMP BL, 0
+    JNE fire_detected   ; If result is 1, jump to fire_detected message
+
+    ; Display "System Normal" message
+    MOV AH, 09H
+    LEA DX, msg_normal
+    INT 21H
+    JMP END_PROGRAM
+
+fire_detected:
+    ; Display "Fire Detected" message
+    MOV AH, 09H
+    LEA DX, msg_fire
+    INT 21H
+; Sound alarm (simulated via simple tone)
+    mov ah, 2
+    mov dl, 07 ;beep ascii code
+    int 21h 
+    
+    mov ah, 2
+    mov dl, 07 ;beep ascii code
+    int 21h
+    
+    mov ah, 2
+    mov dl, 07 ;beep ascii code
+    int 21h
+    
+    exit:
+    mov ah, 4ch
+    int 21h
+
+END_PROGRAM:
+    MOV AH, 4CH         ; Exit program
+    INT 21H
+
+MAIN ENDP
+
+END MAIN
+
